@@ -1,6 +1,12 @@
 # bufbuild/buf-breaking-action
 
-Hardened GitHub Action by [Chainguard](https://www.chainguard.dev).
+Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/bufbuild/buf-breaking-action](https://github.com/bufbuild/buf-breaking-action).
+
+## Versions
+
+| Version | Tag | Upstream commit |
+|---------|-----|-----------------|
+| v1.1.4 | [`v1.1.4`](https://github.com/chainguard-actions/buf-breaking-action/tree/v1.1.4) | — |
 
 ## Privacy
 
