@@ -1,5 +1,6 @@
 {
   "owner": "bufbuild",
   "name": "buf-breaking-action",
-  "visibility": "internal"
+  "visibility": "internal",
+  "block_publish": false
 }
