@@ -1,5 +1,8 @@
 # bufbuild/buf-breaking-action
 
+Check that the Input location has no breaking changes compared to the "against" location.
+
+
 Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/bufbuild/buf-breaking-action](https://github.com/bufbuild/buf-breaking-action).
 
 ## Versions
