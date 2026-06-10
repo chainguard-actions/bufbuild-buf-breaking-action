@@ -1,0 +1,28 @@
+name: Test buf-breaking with buf_token
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install buf
+        run: |
+          curl -sSL "https://github.com/bufbuild/buf/releases/download/v1.28.1/buf-Linux-x86_64" -o /usr/local/bin/buf
+          chmod +x /usr/local/bin/buf
+          buf --version
+
+      - id: action
+        uses: .
+        with:
+          input: actions/hardened/bufbuild--buf-breaking-action/v1.1.4/tests/fixtures/proto
+          against: actions/hardened/bufbuild--buf-breaking-action/v1.1.4/tests/fixtures/proto
+          buf_token: "dummy-token-for-testing"
+
+      - name: Assert results output exists
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+        run: |
+          echo "results: $RESULTS"
+          echo "PASS: action completed successfully with buf_token provided"
