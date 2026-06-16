@@ -9,7 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
-| v1.1.4 | [`v1.1.4`](https://github.com/chainguard-actions/bufbuild-buf-breaking-action/tree/v1.1.4) | — |
+| v1.1.4 | [`v1.1.4`](https://github.com/chainguard-actions/bufbuild-buf-breaking-action/tree/v1.1.4) | [`c57b3d8`](https://github.com/bufbuild/buf-breaking-action/commit/c57b3d842a5c3f3b454756ef65305a50a587c5ba) |
 
 ## Privacy
 
