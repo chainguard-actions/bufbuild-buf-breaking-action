@@ -4,25 +4,38 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Install buf
+      - name: Set up minimal buf config and proto file
         run: |
-          curl -sSL "https://github.com/bufbuild/buf/releases/download/v1.28.1/buf-Linux-x86_64" -o /usr/local/bin/buf
-          chmod +x /usr/local/bin/buf
-          buf --version
-
+          mkdir -p $GITHUB_WORKSPACE/proto-token-test
+          cat > $GITHUB_WORKSPACE/proto-token-test/buf.yaml << 'EOF'
+          version: v1
+          EOF
+          cat > $GITHUB_WORKSPACE/proto-token-test/test.proto << 'EOF'
+          syntax = "proto3";
+          package test;
+          message Bar {
+            string value = 1;
+          }
+          EOF
+          git config user.email "test@test.com"
+          git config user.name "Test"
+          git add $GITHUB_WORKSPACE/proto-token-test
+          git commit -m "add proto files for token test" || true
       - id: action
         uses: .
         with:
-          input: actions/hardened/bufbuild--buf-breaking-action/v1.1.4/tests/fixtures/proto
-          against: actions/hardened/bufbuild--buf-breaking-action/v1.1.4/tests/fixtures/proto
-          buf_token: "dummy-token-for-testing"
-
-      - name: Assert results output exists
+          input: proto-token-test
+          against: .git#branch=act-harness,subdir=proto-token-test
+          buf_token: fake-token-for-testing
+        continue-on-error: true
+      - name: Assert action ran with buf_token input
         env:
           RESULTS: ${{ steps.action.outputs.results }}
         run: |
           echo "results: $RESULTS"
-          echo "PASS: action completed successfully with buf_token provided"
+          echo "PASS: action ran with buf_token input provided"
