@@ -1,0 +1,44 @@
+name: Test buf-breaking when buf is not installed
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Ensure buf is not on PATH
+        run: |
+          # Verify buf is not installed in this environment
+          if command -v buf &>/dev/null; then
+            echo "buf found at: $(which buf)"
+            # Remove it from PATH for this test by creating a wrapper that fails
+            mkdir -p /tmp/no-buf-bin
+            # We'll override PATH in the action step instead
+          else
+            echo "buf not installed, good"
+          fi
+
+      - id: action
+        uses: .
+        with:
+          input: .
+          against: "https://github.com/bufbuild/buf-breaking-action.git#branch=main"
+        env:
+          PATH: /tmp/no-buf-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        continue-on-error: true
+
+      - name: Assert action failed because buf is not installed
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action correctly failed when buf is not installed"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "FAIL: action should have failed when buf is not installed"
+            exit 1
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

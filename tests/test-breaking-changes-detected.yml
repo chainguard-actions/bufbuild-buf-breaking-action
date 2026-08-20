@@ -1,0 +1,71 @@
+name: Test buf-breaking detects breaking changes
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install buf CLI
+        run: |
+          curl -sSL "https://github.com/bufbuild/buf/releases/download/v1.28.1/buf-Linux-x86_64" -o /usr/local/bin/buf
+          chmod +x /usr/local/bin/buf
+          buf --version
+
+      - name: Set up proto files - "against" (old version with more fields)
+        run: |
+          mkdir -p /tmp/proto-against/proto
+          cat > /tmp/proto-against/buf.yaml << 'EOF'
+          version: v1
+          EOF
+          cat > /tmp/proto-against/proto/example.proto << 'EOF'
+          syntax = "proto3";
+          package example.v1;
+          option go_package = "example/v1;examplev1";
+          message Foo {
+            string name = 1;
+            int32 id = 2;
+            string description = 3;
+          }
+          EOF
+
+      - name: Set up proto files - "input" (new version with field removed - breaking change)
+        run: |
+          mkdir -p /tmp/proto-input/proto
+          cat > /tmp/proto-input/buf.yaml << 'EOF'
+          version: v1
+          EOF
+          cat > /tmp/proto-input/proto/example.proto << 'EOF'
+          syntax = "proto3";
+          package example.v1;
+          option go_package = "example/v1;examplev1";
+          message Foo {
+            string name = 1;
+            int32 id = 2;
+          }
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          input: /tmp/proto-input
+          against: /tmp/proto-against
+        continue-on-error: true
+
+      - name: Assert breaking changes were detected
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "results: $RESULTS"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action correctly detected breaking changes and failed"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "FAIL: action should have detected breaking changes (field removed)"
+            exit 1
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

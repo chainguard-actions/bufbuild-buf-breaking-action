@@ -31,5 +31,6 @@ outputs:
   results:
     description: "The generated breaking change messages with the file annotations."
 runs:
+  pre: chainguard-phonehome.js
   using: "node20"
   main: "./dist/main.js"

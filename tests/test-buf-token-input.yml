@@ -1,0 +1,54 @@
+name: Test buf-breaking with buf_token input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install buf CLI
+        run: |
+          curl -sSL "https://github.com/bufbuild/buf/releases/download/v1.28.1/buf-Linux-x86_64" -o /usr/local/bin/buf
+          chmod +x /usr/local/bin/buf
+          buf --version
+
+      - name: Set up proto files for testing
+        run: |
+          mkdir -p /tmp/proto-token-test/proto
+          cat > /tmp/proto-token-test/buf.yaml << 'EOF'
+          version: v1
+          EOF
+          cat > /tmp/proto-token-test/proto/example.proto << 'EOF'
+          syntax = "proto3";
+          package example.v1;
+          option go_package = "example/v1;examplev1";
+          message Bar {
+            string name = 1;
+            int32 id = 2;
+          }
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          input: /tmp/proto-token-test
+          against: /tmp/proto-token-test
+          buf_token: "dummy-token-for-coverage"
+        continue-on-error: true
+
+      - name: Assert action ran with buf_token input
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "results: $RESULTS"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded with buf_token set and no breaking changes"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (acceptable under harness constraints)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

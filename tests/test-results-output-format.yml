@@ -1,0 +1,79 @@
+name: Test buf-breaking results output format
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install buf CLI
+        run: |
+          curl -sSL "https://github.com/bufbuild/buf/releases/download/v1.28.1/buf-Linux-x86_64" -o /usr/local/bin/buf
+          chmod +x /usr/local/bin/buf
+          buf --version
+
+      - name: Set up proto files with a breaking change (field type changed)
+        run: |
+          # "against" version - original proto
+          mkdir -p /tmp/proto-v1/proto
+          cat > /tmp/proto-v1/buf.yaml << 'EOF'
+          version: v1
+          EOF
+          cat > /tmp/proto-v1/proto/service.proto << 'EOF'
+          syntax = "proto3";
+          package myservice.v1;
+          option go_package = "myservice/v1;myservicev1";
+          message Request {
+            string query = 1;
+            int32 page_size = 2;
+          }
+          message Response {
+            repeated string results = 1;
+            int32 total = 2;
+          }
+          EOF
+
+          # "input" version - changed field type (breaking change)
+          mkdir -p /tmp/proto-v2/proto
+          cat > /tmp/proto-v2/buf.yaml << 'EOF'
+          version: v1
+          EOF
+          cat > /tmp/proto-v2/proto/service.proto << 'EOF'
+          syntax = "proto3";
+          package myservice.v1;
+          option go_package = "myservice/v1;myservicev1";
+          message Request {
+            string query = 1;
+            int64 page_size = 2;
+          }
+          message Response {
+            repeated string results = 1;
+            int32 total = 2;
+          }
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          input: /tmp/proto-v2
+          against: /tmp/proto-v1
+        continue-on-error: true
+
+      - name: Assert results output is set when breaking changes found
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "results: $RESULTS"
+          # The action should fail because there's a breaking change (int32 -> int64)
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action correctly detected breaking change (field type changed)"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "FAIL: action should have detected breaking change (int32 -> int64)"
+            exit 1
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
