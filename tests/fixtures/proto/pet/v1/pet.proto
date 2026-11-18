@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package pet.v1;
-
-message Pet {
-  string name = 1;
-  string id = 2;
-}
